@@ -56,33 +56,46 @@ if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$
     fi
 fi
 
-# update submodules
-cd "$XIVLauncher_DIR" || echo "XIVLauncher.Core's local repo doesn't exist" && exit 1
-git submodule update --init --recursive
-
 # build
 echo "Do you want to build XIVLauncher.Core $VERSION?"
 read -r PROMPT
 if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$PROMPT" = "Y" ]; then
+    # update submodules
+    cd "$XIVLauncher_DIR" ||
+        (echo "XIVLauncher.Core's local repo doesn't exist" && exit 1)
+    git submodule update --init --recursive
+
     cd "src/XIVLauncher.Core" ||
-        echo "XIVLauncher.Core's directory structure is wrong" && exit 1
+        (echo "XIVLauncher.Core's directory structure is wrong" && exit 1)
     DOTNET_ROOT="$XIVLauncher_DIR/dotnet" PATH="$PATH:$XIVLauncher_DIR/dotnet" dotnet publish \
         -r linux-x64 --sc -o "$XIVLauncher_DIR/build" --configuration Release \
         -p:Version="$VERSION" -p:DefineConstants=WINE_XIV_${DISTRO_NAME}_LINUX
+
+    BUILT=true
 fi
 
 # link the binary file
-mkdir -p "$BIN_DIR"
-ln -sf "$XIVLauncher_DIR/build/XIVLauncher.Core" "$BIN_DIR"
+if [ "$BUILT" = true ]; then
+    mkdir -p "$BIN_DIR"
+    ln -sf "$XIVLauncher_DIR/build/XIVLauncher.Core" "$BIN_DIR"
+fi
 
 # create the desktop entry
-mkdir -p "$APPS_DIR"
-echo "$DESKTOP_ENTRY" >"$APPS_DIR/XIVLauncher.desktop"
+if [ ! -f "$APPS_DIR/XIVLauncher.desktop" ]; then
+    mkdir -p "$APPS_DIR"
+    echo "$DESKTOP_ENTRY" >"$APPS_DIR/XIVLauncher.desktop"
+fi
 
 # link the icon for the desktop entry
-mkdir -p "$ICONS_DIR"
-ln -sf "$XIVLauncher_DIR/misc/linux_distrib/512.png" "$ICONS_DIR/xivlauncher.png"
+if [ ! -f "$ICONS_DIR/xivlauncher.png" ]; then
+    mkdir -p "$ICONS_DIR"
+    ln -sf "$XIVLauncher_DIR/misc/linux_distrib/512.png" "$ICONS_DIR/xivlauncher.png"
+fi
 
-echo "Installation sucessful: XIVLauncher.Core $VERSION"
+if [ "$BUILT" = true ]; then
+    echo "Installation sucessful: XIVLauncher.Core $VERSION"
+else
+    echo "XIVLauncher $VERSION wasn't built"
+fi
 
 exit 0

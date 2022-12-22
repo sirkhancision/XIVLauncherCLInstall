@@ -1,6 +1,6 @@
 # XIVLauncherCLInstall
 
-This is a POSIX shell script to install [XIVLauncher.Core]([GitHub - goatcorp/XIVLauncher.Core: Cross-platform version of XIVLauncher, optimized for Steam Deck](https://github.com/goatcorp/XIVLauncher.Core)) in a Linux distribution (it aims at being distro agnostic, even though you'd have to edit a simple line of text in the script for that, I'll get to it).
+This is a POSIX shell script to install [XIVLauncher.Core](https://github.com/goatcorp/XIVLauncher.Core) in a Linux distribution (it aims at being distro agnostic, even though you'd have to edit a simple line of text in the script for that, I'll get to it).
 
 ## How to use this:
 
@@ -16,7 +16,7 @@ Just run `./XIVLauncherCLInstall` in the terminal, and it will give you some pro
 
 ## Reason for this to exist:
 
-Void Linux currently doesn't have the .NET SDK available, which is needed to build XIVLauncher.Core, therefore I can't make a template that builds a working version of it. The [flatpak]([Flathub—An app store and build service for Linux](https://flathub.org/apps/details/dev.goats.xivlauncher)) currently has an issue where it starts to have performance issues after some time playing the game, along with not being able to use [gamemode]([GitHub - FeralInteractive/gamemode: Optimise Linux system performance on demand](https://github.com/FeralInteractive/gamemode)), so that's also out of question.
+Void Linux currently doesn't have the .NET SDK available, which is needed to build XIVLauncher.Core, therefore I can't make a template that builds a working version of it. The [flatpak](https://flathub.org/apps/details/dev.goats.xivlauncher) currently has an issue where it starts to have performance issues after some time playing the game, along with not being able to use [gamemode](https://github.com/FeralInteractive/gamemode), so that's also out of question.
 
 ## Some things you might want to edit in the script:
 

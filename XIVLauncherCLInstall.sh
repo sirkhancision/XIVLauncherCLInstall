@@ -40,7 +40,7 @@ if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$
     fi
 fi
 
-echo "Do you want to install dotnet 6.0 SDK?"
+echo "Do you want to install .NET SDK 6.0?"
 read -r PROMPT
 if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$PROMPT" = "Y" ]; then
     # download .NET 6.0 SDK

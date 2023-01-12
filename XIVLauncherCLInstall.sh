@@ -16,33 +16,36 @@ ICONS_DIR="$HOME/.icons"
 DISTRO_NAME="VOID"
 
 DESKTOP_ENTRY="[Desktop Entry]
-Name=XIVLauncher.Core
+Name=XIVLauncher
 Comment=Cross-platform launcher for Final Fantasy XIV Online
 Exec=env XL_SECRET_PROVIDER=FILE $BIN_DIR/XIVLauncher.Core
 Icon=xivlauncher
 Terminal=false
 Type=Application
 Categories=Application;Game;
-StartupWMClass=XIVLauncher.Core"
+StartupWMClass=XIVLauncher"
 
 XIVLauncherCore_GIT="https://github.com/goatcorp/XIVLauncher.Core.git"
 DOTNET_LINK="https://dotnet.microsoft.com/pt-br/download/dotnet/thank-you/sdk-6.0.404-linux-x64-binaries"
 
 echo "Do you want to clone XIVLauncher.Core's repository?"
 read -r PROMPT
-if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$PROMPT" = "Y" ]; then
-    mkdir "$XIVLauncher_DIR"
+case $PROMPT in
+"y" | "Y" | "yes" | "Yes")
+    mkdir -p "$XIVLauncher_DIR"
 
     if [ "$(which git)" ]; then
         git clone "$XIVLauncherCore_GIT" "$XIVLauncher_DIR"
     else
         echo "git is not installed" && exit 1
     fi
-fi
+    ;;
+esac
 
 echo "Do you want to install .NET SDK 6.0?"
 read -r PROMPT
-if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$PROMPT" = "Y" ]; then
+case $PROMPT in
+"y" | "Y" | "yes" | "Yes")
     # download .NET 6.0 SDK
     mkdir -p "$XIVLauncher_DIR/dotnet"
 
@@ -54,12 +57,14 @@ if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$
         curl -Lo /dev/stdout "$DOTNET_LINK" |
             bsdtar -xf /dev/stdin --directory "$XIVLauncher_DIR/dotnet"
     fi
-fi
+    ;;
+esac
 
 # build
 echo "Do you want to build XIVLauncher.Core $VERSION?"
 read -r PROMPT
-if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$PROMPT" = "Y" ]; then
+case $PROMPT in
+"y" | "Y" | "yes" | "Yes")
     # update submodules
     cd "$XIVLauncher_DIR" ||
         (echo "XIVLauncher.Core's local repo doesn't exist" && exit 1)
@@ -72,7 +77,8 @@ if [ "$PROMPT" = "yes" ] || [ "$PROMPT" = "Yes" ] || [ "$PROMPT" = "y" ] || [ "$
         -p:Version="$VERSION" -p:DefineConstants=WINE_XIV_${DISTRO_NAME}_LINUX
 
     BUILT=true
-fi
+    ;;
+esac
 
 # link the binary file
 if [ "$BUILT" = true ]; then

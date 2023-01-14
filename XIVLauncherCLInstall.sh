@@ -6,7 +6,7 @@ set -e
 
 # adjust according to the directory you wish to clone XIVLauncher.Core
 XIVLauncher_DIR="$HOME/Github/XIVLauncher.Core"
-VERSION=1.0.2
+VERSION=1.0.3
 
 BIN_DIR="$HOME/.local/bin"
 APPS_DIR="$HOME/.local/share/applications"
@@ -65,9 +65,10 @@ echo "Do you want to build XIVLauncher.Core $VERSION?"
 read -r PROMPT
 case $PROMPT in
 "y" | "Y" | "yes" | "Yes")
-    # update submodules
+    # pull changes and update submodules
     cd "$XIVLauncher_DIR" ||
         (echo "XIVLauncher.Core's local repo doesn't exist" && exit 1)
+    git pull
     git submodule update --init --recursive
 
     cd "src/XIVLauncher.Core" ||

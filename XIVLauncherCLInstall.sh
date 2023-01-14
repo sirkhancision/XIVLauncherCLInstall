@@ -75,7 +75,8 @@ case $PROMPT in
         (echo "XIVLauncher.Core's directory structure is wrong" && exit 1)
     DOTNET_ROOT="$XIVLauncher_DIR/dotnet" PATH="$PATH:$XIVLauncher_DIR/dotnet" dotnet publish \
         -r linux-x64 --sc -o "$XIVLauncher_DIR/build" --configuration Release \
-        -p:Version="$VERSION" -p:DefineConstants=WINE_XIV_${DISTRO_NAME}_LINUX
+        -p:Version="$VERSION" -p:DefineConstants=WINE_XIV_${DISTRO_NAME}_LINUX \
+        --no-restore
 
     BUILT=true
     ;;

@@ -26,12 +26,9 @@ Categories=Application;Game;
 StartupWMClass=XIVLauncher"
 
 XIVLauncherCore_GIT="https://github.com/goatcorp/XIVLauncher.Core.git"
-DOTNET_LINK="https://dotnet.microsoft.com/pt-br/download/dotnet/thank-you/sdk-6.0.404-linux-x64-binaries"
+DOTNET_LINK="https://download.visualstudio.microsoft.com/download/pr/c646b288-5d5b-4c9c-a95b-e1fad1c0d95d/e13d71d48b629fe3a85f5676deb09e2d/dotnet-sdk-7.0.102-linux-x64.tar.gz"
 
-echo "Do you want to clone XIVLauncher.Core's repository?"
-read -r PROMPT
-case $PROMPT in
-"y" | "Y" | "yes" | "Yes")
+clone_repo() {
     mkdir -p "$XIVLauncher_DIR"
 
     if [ "$(which git)" ]; then
@@ -39,48 +36,85 @@ case $PROMPT in
     else
         echo "git is not installed" && exit 1
     fi
-    ;;
-esac
+}
 
-echo "Do you want to install .NET SDK 6.0?"
-read -r PROMPT
-case $PROMPT in
-"y" | "Y" | "yes" | "Yes")
-    # download .NET 6.0 SDK
-    mkdir -p "$XIVLauncher_DIR/dotnet"
+echo "Do you want to clone XIVLauncher.Core's repository?"
+while true; do
+    if [ -d "$XIVLauncher_DIR" ]; then
+        printf "The repository already exists, operation cancelled\n\n"
+        break
+    fi
+    read -r PROMPT
+    case $PROMPT in
+    "y" | "Y" | "yes" | "Yes") clone_repo && break ;;
+    "n" | "N" | "no" | "No") break ;;
+    *) continue ;;
+    esac
+done
 
+download_dotnet() {
+    rm -rf "$XIVLauncher_DIR/dotnet"
     if [ -z "$(which curl)" ]; then
         echo "curl is not installed" && exit 1
     elif [ -z "$(which bsdtar)" ]; then
         echo "bsdtar is not installed" && exit 1
     else
+        mkdir -p "$XIVLauncher_DIR/dotnet"
         curl -Lo /dev/stdout "$DOTNET_LINK" |
             bsdtar -xf /dev/stdin --directory "$XIVLauncher_DIR/dotnet"
     fi
-    ;;
-esac
+}
 
-# build
-echo "Do you want to build XIVLauncher.Core $VERSION?"
-read -r PROMPT
-case $PROMPT in
-"y" | "Y" | "yes" | "Yes")
-    # pull changes and update submodules
-    cd "$XIVLauncher_DIR" ||
-        (echo "XIVLauncher.Core's local repo doesn't exist" && exit 1)
-    git pull
-    git submodule update --init --recursive
+echo "Do you want to install .NET SDK 7?"
+while true; do
+    read -r PROMPT
+    case $PROMPT in
+    "y" | "Y" | "yes" | "Yes")
+        if [ -d "$XIVLauncher_DIR/dotnet" ]; then
+            echo ".NET is already installed, do you want to re-install it?"
+            read -r PROMPT
+            case $PROMPT in
+            "y" | "Y" | "yes" | "Yes") download_dotnet && break ;;
+            "n" | "N" | "no" | "No") break ;;
+            *) continue ;;
+            esac
+        fi
+        ;;
+    "n" | "N" | "no" | "No") break ;;
+    *) continue ;;
+    esac
+done
 
+build() {
     cd "src/XIVLauncher.Core" ||
         (echo "XIVLauncher.Core's directory structure is wrong" && exit 1)
-    DOTNET_ROOT="$XIVLauncher_DIR/dotnet" PATH="$PATH:$XIVLauncher_DIR/dotnet" dotnet publish \
-        -r linux-x64 --sc -o "$XIVLauncher_DIR/build" --configuration Release \
-        -p:Version="$VERSION" -p:DefineConstants=WINE_XIV_${DISTRO_NAME}_LINUX \
-        --no-restore
+    rm -rf "$XIVLauncher_DIR/build"
 
-    BUILT=true
-    ;;
-esac
+    DOTNET_ROOT="$XIVLauncher_DIR/dotnet" PATH="$PATH:$XIVLauncher_DIR/dotnet" \
+        dotnet publish -r linux-x64 --sc -o "$XIVLauncher_DIR/build" \
+        --configuration Release -p:Version="$VERSION" \
+        -p:DefineConstants=WINE_XIV_${DISTRO_NAME}_LINUX
+}
+
+echo "Do you want to build XIVLauncher.Core $VERSION?"
+while true; do
+    read -r PROMPT
+    case $PROMPT in
+    "y" | "Y" | "yes" | "Yes")
+        # pull changes and update submodules
+        cd "$XIVLauncher_DIR" ||
+            (echo "XIVLauncher.Core's local repo doesn't exist" && exit 1)
+        git pull
+        git submodule update --init --recursive
+
+        build
+        BUILT=true
+        break
+        ;;
+    "n" | "N" | "no" | "No") break ;;
+    *) continue ;;
+    esac
+done
 
 # link the binary file
 if [ "$BUILT" = true ]; then

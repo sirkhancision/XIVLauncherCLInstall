@@ -15,6 +15,7 @@ BIN_DIR="$HOME/.local/bin"
 APPS_DIR="$HOME/.local/share/applications"
 ICONS_DIR="$HOME/.icons"
 
+# get distro's name
 if [ -f /etc/os-release ]; then
 	. /etc/os-release
 	DISTRO_NAME=$(echo "$NAME" | tr "[:lower:]" "[:upper:]")
@@ -31,7 +32,7 @@ elif [ -f /etc/SuSe-release ]; then
 elif [ -f /etc/redhat-release ]; then
 	DISTRO_NAME="REDHAT"
 else
-	DISTRO_NAME="LINUX"
+	DISTRO_NAME="UNKNOWN"
 fi
 
 DESKTOP_ENTRY="[Desktop Entry]
@@ -113,7 +114,7 @@ build() {
 	DOTNET_ROOT="$XIVLauncher_DIR/dotnet" PATH="$PATH:$XIVLauncher_DIR/dotnet" \
 		dotnet publish -r linux-x64 --sc -o "$XIVLauncher_DIR/build" \
 		--configuration Release -p:Version="$VERSION" \
-		-p:DefineConstants=WINE_XIV_${DISTRO_NAME}_LINUX
+		-p:DefineConstants=WINE_XIV_"${DISTRO_NAME}"_LINUX
 }
 
 echo "Do you want to build XIVLauncher.Core $VERSION?"
@@ -155,9 +156,9 @@ if [ ! -f "$ICONS_DIR/xivlauncher.png" ]; then
 fi
 
 if [ "$BUILT" = true ]; then
-	echo "Installation sucessful: XIVLauncher.Core $VERSION"
+	echo "Installation sucessful: XIVLauncher.Core v${VERSION}"
 else
-	echo "XIVLauncher $VERSION wasn't built"
+	echo "XIVLauncher v${VERSION} wasn't built"
 fi
 
 exit 0

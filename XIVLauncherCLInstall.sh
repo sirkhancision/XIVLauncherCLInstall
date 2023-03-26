@@ -2,8 +2,6 @@
 # XIVLauncherCLInstall
 # by sirkhancision
 
-set -e
-
 # adjust according to the directory you wish to clone XIVLauncher.Core
 XIVLauncher_DIR="$HOME/Github/XIVLauncher.Core"
 REPO=https://github.com/goatcorp/XIVLauncher.Core
@@ -160,5 +158,3 @@ if [ "$BUILT" = true ]; then
 else
 	echo "XIVLauncher v${VERSION} wasn't built"
 fi
-
-exit 0

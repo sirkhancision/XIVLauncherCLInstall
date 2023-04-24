@@ -1,13 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 # XIVLauncherCLInstall
 # by sirkhancision
 
 # adjust according to the directory you wish to clone XIVLauncher.Core
 XIVLauncher_DIR="$HOME/Github/XIVLauncher.Core"
-REPO=https://github.com/goatcorp/XIVLauncher.Core
-LATEST_RELEASE_URL="$(curl -Ls -o /dev/null -w %'{url_effective}' $REPO/releases/latest)"
-# sometimes, they forget to tag the release, but w/e
-VERSION=${LATEST_RELEASE_URL##*/}
+VERSION=""
 
 BIN_DIR="$HOME/.local/bin"
 APPS_DIR="$HOME/.local/share/applications"
@@ -56,19 +53,25 @@ clone_repo() {
 	fi
 }
 
-echo "XIVLauncher.Core v${VERSION}"
-echo "Do you want to clone XIVLauncher.Core's repository?"
+read -rp "Do you want to clone XIVLauncher.Core's repository? <y/n> " PROMPT
 while true; do
 	if [ -d "$XIVLauncher_DIR" ]; then
 		printf "The repository already exists, operation cancelled\n\n"
-		break
+		CLONED=true
 	fi
-	read -r PROMPT
-	case $PROMPT in
-	"y" | "Y" | "yes" | "Yes") clone_repo && break ;;
-	"n" | "N" | "no" | "No") break ;;
-	*) continue ;;
-	esac
+
+	if [[ $PROMPT =~ ^[Yy]$ ]] && [[ $CLONED != true ]]; then
+		clone_repo
+		CLONED=true
+	elif [[ $PROMPT =~ ^[Nn]$ ]] && [[ $CLONED != true ]]; then
+		break
+	elif [[ $CLONED != true ]]; then
+		continue
+	fi
+
+	cd "$XIVLauncher_DIR" || exit 1
+	VERSION=$(git tag -l --sort=-creatordate | head -n1)
+	break
 done
 
 download_dotnet() {
@@ -84,24 +87,25 @@ download_dotnet() {
 	fi
 }
 
-echo "Do you want to install .NET SDK 7?"
+read -rp "Do you want to install .NET SDK 7? <y/n> " PROMPT
 while true; do
-	read -r PROMPT
-	case $PROMPT in
-	"y" | "Y" | "yes" | "Yes")
+	if [[ $PROMPT =~ ^[Yy]$ ]]; then
 		if [ -d "$XIVLauncher_DIR/dotnet" ]; then
-			echo ".NET is already installed, do you want to re-install it?"
-			read -r PROMPT
-			case $PROMPT in
-			"y" | "Y" | "yes" | "Yes") download_dotnet && break ;;
-			"n" | "N" | "no" | "No") break ;;
-			*) continue ;;
-			esac
+			read -rp ".NET is already installed, do you want to re-install it? <y/n> " PROMPT
+			if [[ $PROMPT =~ ^[Yy]$ ]]; then
+				true
+			elif [[ $PROMPT =~ ^[Nn]$ ]]; then
+				break
+			else
+				continue
+			fi
 		fi
-		;;
-	"n" | "N" | "no" | "No") break ;;
-	*) continue ;;
-	esac
+		download_dotnet && break
+	elif [[ $PROMPT =~ ^[Nn]$ ]]; then
+		break
+	else
+		continue
+	fi
 done
 
 build() {
@@ -115,24 +119,24 @@ build() {
 		-p:DefineConstants=WINE_XIV_"${DISTRO_NAME}"_LINUX
 }
 
-echo "Do you want to build XIVLauncher.Core $VERSION?"
+read -rp "Do you want to build XIVLauncher.Core $VERSION? <y/n> " PROMPT
 while true; do
-	read -r PROMPT
-	case $PROMPT in
-	"y" | "Y" | "yes" | "Yes")
+	if [[ $PROMPT =~ ^[Yy]$ ]]; then
 		# pull changes and update submodules
 		cd "$XIVLauncher_DIR" ||
 			(echo "XIVLauncher.Core's local repo doesn't exist" && exit 1)
 		git pull
 		git submodule update --init --recursive
+		git checkout --quiet "$VERSION"
 
 		build
 		BUILT=true
 		break
-		;;
-	"n" | "N" | "no" | "No") break ;;
-	*) continue ;;
-	esac
+	elif [[ $PROMPT =~ ^[Nn]$ ]]; then
+		break
+	else
+		continue
+	fi
 done
 
 # link the binary file
@@ -153,8 +157,14 @@ if [ ! -f "$ICONS_DIR/xivlauncher.png" ]; then
 	ln -sf "$XIVLauncher_DIR/misc/linux_distrib/512.png" "$ICONS_DIR/xivlauncher.png"
 fi
 
+if [[ $CLONED == true ]]; then
+	cd "$XIVLauncher_DIR" || exit 1
+	git checkout --quiet main
+	cd - >/dev/null || exit 1
+fi
+
 if [ "$BUILT" = true ]; then
-	echo "Installation sucessful: XIVLauncher.Core v${VERSION}"
+	echo "XIVLauncher.Core ${VERSION} installed successfully"
 else
-	echo "XIVLauncher v${VERSION} wasn't built"
+	echo "XIVLauncher wasn't built"
 fi

@@ -1,6 +1,6 @@
 # XIVLauncherCLInstall
 
-This is a POSIX shell script to install [XIVLauncher.Core](https://github.com/goatcorp/XIVLauncher.Core) in a Linux distribution (it aims at being distro agnostic, even though you'd have to edit a simple line of text in the script for that, I'll get to it).
+This is a shell script to install [XIVLauncher.Core](https://github.com/goatcorp/XIVLauncher.Core) in a Linux distribution (it aims at being distro agnostic, even though you'd have to edit a simple line of text in the script for that, I'll get to it).
 
 ## How to use this:
 
@@ -23,5 +23,3 @@ Void Linux currently doesn't have the .NET SDK available, which is needed to bui
 The script's default path to clone XIVLauncher.Core to is `~/Github/XIVLauncher.Core`, but you can edit it (at line 8) to where you want it to point to.
 
 Additionally, at line 21, the desktop entry has the following: `env XL_SECRET_PROVIDER=FILE`. That saves your password as a file in your computer, so that XIVLauncher can store it and that you don't have to type your password every time. It poses as a possible security risk, though, so you could want to remove that.
-
-It also comes with a variable called `DISTRO_NAME`, at line 16, which as default, has `VOID` as its value. Feel free to edit that value to the name of your current distribution (e.g. ARCH, FEDORA, etc.), if you care about that.

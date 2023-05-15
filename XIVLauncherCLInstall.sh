@@ -2,20 +2,23 @@
 # XIVLauncherCLInstall
 # by sirkhancision
 
-if ! command -v git >/dev/null; then
-	echo "git is not installed"
-	exit 1
-fi
+# check if program is installed
+check_command() {
+	command -v "$1" >/dev/null 2>&1 || {
+		echo "$1 is not installed"
+		exit 1
+	}
+}
 
-if ! command -v curl >/dev/null; then
-	echo "curl is not installed"
-	exit 1
-fi
+CHECK_COMMANDS=(
+	"git"
+	"curl"
+	"bsdtar"
+)
 
-if ! command -v bsdtar >/dev/null; then
-	echo "bsdtar is not installed"
-	exit 1
-fi
+for CMD in "${CHECK_COMMANDS[@]}"; do
+	check_command "$CMD"
+done
 
 XIVLAUNCHER_DIR="$HOME/Github/XIVLauncher.Core"
 BIN_DIR="$HOME/.local/bin"

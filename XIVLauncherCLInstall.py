@@ -20,9 +20,8 @@ def check_dependencies(dependencies):
     """
     missing_deps = [cmd for cmd in dependencies if which(cmd) is None]
     if missing_deps:
-        print("The following dependencies are missing:")
-        print("\n".join(missing_deps))
-        sys.exit(1)
+        raise SystemExit("The following dependencies are missing:" +
+                         "\n".join(missing_deps))
 
 
 def get_distro_name():
@@ -89,8 +88,7 @@ def build():
     try:
         repository = git.Repo(XIVLAUNCHER_DIR)
     except git.InvalidGitRepositoryError:
-        print("Invalid git repository passed")
-        sys.exit(1)
+        raise git.InvalidGitRepositoryError("Invalid git repository passed")
 
     print("Pulling changes...")
     repository.remotes.origin.pull()
@@ -255,7 +253,11 @@ def build_prompt():
 
 def main(argv):
     dependencies = ["git", "curl", "bsdtar"]
-    check_dependencies(dependencies)
+    try:
+        check_dependencies(dependencies)
+    except SystemExit as e:
+        print(e)
+        sys.exit(1)
 
     arg_parser(argv)
 
@@ -263,7 +265,11 @@ def main(argv):
 
     download_dotnet_prompt()
 
-    build_prompt()
+    try:
+        build_prompt()
+    except git.InvalidGitRepositoryError as e:
+        print(e)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

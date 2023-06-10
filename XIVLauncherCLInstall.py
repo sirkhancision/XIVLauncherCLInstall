@@ -58,10 +58,8 @@ def clone_repo():
 def download_dotnet():
     DOTNET_DIR = os.path.join(XIVLAUNCHER_DIR, "dotnet")
 
-    if os.path.exists(DOTNET_DIR):
-        rmtree(DOTNET_DIR)
-
-    os.makedirs(DOTNET_DIR)
+    rmtree(DOTNET_DIR, ignore_errors=True)
+    os.makedirs(DOTNET_DIR, exist_ok=True)
 
     curl_command = ["curl", "-L", DOTNET_LINK]
     bsdtar_command = ["bsdtar", "-xf", "-", "--directory", DOTNET_DIR]
@@ -70,38 +68,32 @@ def download_dotnet():
     bsdtar_process = subprocess.Popen(bsdtar_command,
                                       stdin=curl_process.stdout)
 
-    bsdtar_process.wait()
+    _, error = bsdtar_process.communicate()
+    return_code = bsdtar_process.returncode
 
-    if bsdtar_process.returncode != 0:
+    if return_code != 0:
+        print(f"Error downloading/extracting dotnet: {error}")
         rmtree(DOTNET_DIR)
 
 
 def get_version():
-    os.chdir(XIVLAUNCHER_DIR)
-    repository = git.Repo()
-    tags = repository.tags
-    latest_tag = str(repository.tag(tags[-1]))
+    repository = git.Repo(XIVLAUNCHER_DIR)
+    latest_tag = str(repository.tags[-1])
     return latest_tag
 
 
 def build():
-    os.chdir(XIVLAUNCHER_DIR)
+    BUILD_DIR = os.path.join(XIVLAUNCHER_DIR, "build")
+    rmtree(BUILD_DIR, ignore_errors=True)
 
     try:
-        repository = git.Repo()
+        repository = git.Repo(XIVLAUNCHER_DIR)
     except git.InvalidGitRepositoryError:
         print("Invalid git repository passed")
         sys.exit(1)
 
-    BUILD_DIR = os.path.join(XIVLAUNCHER_DIR, "build")
-
-    if os.path.exists(BUILD_DIR):
-        rmtree(BUILD_DIR)
-
-    remote_origin = repository.remote(name="origin")
-
     print("Pulling changes...")
-    remote_origin.pull()
+    repository.remotes.origin.pull()
 
     print("Updating submodules...")
     repository.submodule_update(init=True, recursive=True)
@@ -114,12 +106,12 @@ def build():
     latest_branch = repository.create_head("latest", "HEAD")
     repository.head.reference = latest_branch
 
-    os.chdir("src/XIVLauncher.Core")
+    os.chdir(os.path.join(XIVLAUNCHER_DIR, "src/XIVLauncher.Core"))
 
     DOTNET_DIR = os.path.join(XIVLAUNCHER_DIR, "dotnet")
-
     os.environ["DOTNET_ROOT"] = DOTNET_DIR
     os.environ["PATH"] += os.pathsep + DOTNET_DIR
+
     DISTRO_NAME = get_distro_name()
 
     dotnet_cmd = [
@@ -139,13 +131,11 @@ def uninstall():
             option = input(
                 "Do you also with to remove the local git repository? <y/n> ")
 
-            if option in ["Y", "y"]:
+            if option.lower() == "y":
                 rmtree(XIVLAUNCHER_DIR)
                 break
-            elif option in ["N", "n"]:
+            elif option.lower() == "n":
                 break
-            else:
-                continue
 
     files_to_remove = [
         os.path.join(directory, filename) for directory, filename in [(
@@ -158,7 +148,6 @@ def uninstall():
             os.remove(file)
         except FileNotFoundError:
             print(f"{file} not found, ignoring it...")
-            continue
 
     print("XIVLauncher.Core was uninstalled")
 
@@ -186,105 +175,82 @@ def arg_parser(argv):
 
     args = parser.parse_args(argv)
 
-    actions = {
-        args.clone_repo: clone_repo,
-        args.download_dotnet: download_dotnet,
-        args.build: build,
-        args.uninstall: uninstall
-    }
+    if args.clone_repo:
+        clone_repo()
+    if args.download_dotnet:
+        download_dotnet()
+    if args.build:
+        build()
+    if args.uninstall:
+        uninstall()
 
-    if any(actions):
-        for arg, function in actions.items():
-            if arg:
-                function()
+    if any(vars(args).values()):
         sys.exit(0)
 
 
-def clone_repo_prompt():
-    option = input(
-        "Do you want to clone XIVLauncher.Core's repository? <y/n> ")
-
+def prompt_yes_no(question):
     while True:
-        if option in ["Y", "y"]:
-            if os.path.exists(XIVLAUNCHER_DIR):
-                print("The repository already exists, operation cancelled\n")
-                break
-            else:
-                clone_repo()
-                break
-        elif option in ["N", "n"]:
-            break
+        option = input(question + " <y/n> ").lower()
+
+        if option == "y":
+            return True
+        elif option == "n":
+            return False
+
+
+def clone_repo_prompt():
+    if prompt_yes_no("Do you want to clone XIVLauncher.Core's repository?"):
+        if os.path.exists(XIVLAUNCHER_DIR):
+            print("The repository already exists, operation cancelled\n")
         else:
-            continue
+            clone_repo()
 
 
 def download_dotnet_prompt():
-    option = input("Do you want to install .NET SDK 7? <y/n> ")
+    if prompt_yes_no("Do you want to install .NET SDK 7?"):
+        dotnet_dir = os.path.join(XIVLAUNCHER_DIR, "dotnet")
+        if os.path.exists(dotnet_dir):
+            if prompt_yes_no(
+                    ".NET is already installed, do you want to re-install it?"
+            ):
+                return
 
-    while True:
-        if option in ["Y", "y"]:
-            if os.path.exists(os.path.join(XIVLAUNCHER_DIR, "dotnet")):
-                option = input(
-                    ".NET is already installed, do you want to re-install it? "
-                    "<y/n> ")
-
-                if option in ["N", "n"]:
-                    break
-                else:
-                    continue
-
-            download_dotnet()
-            break
-        elif option in ["N", "n"]:
-            break
-        else:
-            continue
+        download_dotnet()
 
 
 def build_prompt():
-    option = input("Do you want to build XIVLauncher.Core? <y/n> ")
+    if prompt_yes_no("Do you want to build XIVLauncher.Core?"):
+        build()
 
-    while True:
-        if option in ["Y", "y"]:
-            build()
+        os.makedirs(BIN_DIR, exist_ok=True)
 
-            os.makedirs(BIN_DIR, exist_ok=True)
+        xivlauncher_binary_path = os.path.join(BIN_DIR, "XIVLauncher.Core")
 
-            xivlauncher_binary_path = os.path.join(BIN_DIR, "XIVLauncher.Core")
+        if not os.path.lexists(xivlauncher_binary_path):
+            os.symlink(os.path.join(XIVLAUNCHER_DIR, "build/XIVLauncher.Core"),
+                       xivlauncher_binary_path)
 
-            if not os.path.lexists(xivlauncher_binary_path):
-                os.symlink(
-                    os.path.join(XIVLAUNCHER_DIR, "build/XIVLauncher.Core"),
-                    xivlauncher_binary_path)
+        xivlauncher_desktop_path = os.path.join(APPS_DIR,
+                                                "XIVLauncher.desktop")
 
-            xivlauncher_desktop_path = os.path.join(APPS_DIR,
-                                                    "XIVLauncher.desktop")
-
-            if not os.path.exists(xivlauncher_desktop_path):
-                os.makedirs(APPS_DIR, exist_ok=True)
-
-                desktop_file = open(xivlauncher_desktop_path, "x")
+        if not os.path.exists(xivlauncher_desktop_path):
+            os.makedirs(APPS_DIR, exist_ok=True)
+            with open(xivlauncher_desktop_path, "x") as desktop_file:
                 desktop_file.write(DESKTOP_ENTRY)
-                desktop_file.close()
 
-            xivlauncher_icon_path = os.path.join(ICONS_DIR, "xivlauncher.png")
+        xivlauncher_icon_path = os.path.join(ICONS_DIR, "xivlauncher.png")
 
-            if not os.path.exists(xivlauncher_icon_path):
-                os.makedirs(ICONS_DIR, exist_ok=True)
-                if not os.path.lexists(xivlauncher_icon_path):
-                    os.symlink(
-                        os.path.join(XIVLAUNCHER_DIR,
-                                     "misc/linux_distrib/512.png"),
-                        xivlauncher_icon_path)
+        if not os.path.exists(xivlauncher_icon_path):
+            os.makedirs(ICONS_DIR, exist_ok=True)
+            if not os.path.lexists(xivlauncher_icon_path):
+                os.symlink(
+                    os.path.join(XIVLAUNCHER_DIR,
+                                 "misc/linux_distrib/512.png"),
+                    xivlauncher_icon_path)
 
-            print(
-                f"XIVLauncher.Core {get_version()} was installed sucessfully")
-            break
-        elif option in ["N", "n"]:
-            print("XIVLauncher wasn't built")
-            break
-        else:
-            continue
+        print(f"XIVLauncher.Core {get_version()} was installed sucessfully")
+    else:
+        print("XIVLauncher wasn't built")
 
 
 def main(argv):

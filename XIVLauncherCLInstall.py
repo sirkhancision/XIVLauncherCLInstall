@@ -77,7 +77,9 @@ def download_dotnet():
 
 def get_version():
     repository = git.Repo(XIVLAUNCHER_DIR)
-    latest_tag = str(repository.tags[-1])
+    tags = sorted(repository.tags,
+                  key=lambda tag: tag.commit.committed_datetime)
+    latest_tag = tags[-1]
     return latest_tag
 
 
@@ -97,9 +99,13 @@ def build():
     repository.submodule_update(init=True, recursive=True)
 
     version = get_version()
-    version_pretty = version.replace("v", "")
+
+    print(f"Latest version found: {version}")
 
     # change branch to version tag
+    if "latest" in repository.branches:
+        repository.delete_head("latest")
+
     repository.git.checkout(version)
     latest_branch = repository.create_head("latest", "HEAD")
     repository.head.reference = latest_branch
@@ -112,9 +118,12 @@ def build():
 
     DISTRO_NAME = get_distro_name()
 
+    if "v" in str(version):
+        version = version.replace("v", "")
+
     dotnet_cmd = [
         "dotnet", "publish", "-r", "linux-x64", "--self-contained", "true",
-        "--configuration", "Release", f"-p:Version={version_pretty}",
+        "--configuration", "Release", f"-p:Version={version}",
         f"-p:DefineConstants=WINE_XIV_{DISTRO_NAME}", "-o", BUILD_DIR
     ]
 
